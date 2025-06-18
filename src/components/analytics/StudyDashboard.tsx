@@ -35,6 +35,37 @@ export const StudyDashboard: React.FC<StudyDashboardProps> = ({ onBack, darkMode
   };
 
   const maxStudyTime = Math.max(...weeklyData.map(d => d.minutes));
+  const minStudyTime = Math.min(...weeklyData.map(d => d.minutes));
+
+  // Generate SVG path for the line
+  const generateLinePath = () => {
+    const width = 600;
+    const height = 200;
+    const padding = 40;
+    
+    const points = weeklyData.map((day, index) => {
+      const x = padding + (index * (width - 2 * padding)) / (weeklyData.length - 1);
+      const y = height - padding - ((day.minutes - minStudyTime) / (maxStudyTime - minStudyTime)) * (height - 2 * padding);
+      return `${x},${y}`;
+    });
+    
+    return `M ${points.join(' L ')}`;
+  };
+
+  // Generate points for circles
+  const generatePoints = () => {
+    const width = 600;
+    const height = 200;
+    const padding = 40;
+    
+    return weeklyData.map((day, index) => {
+      const x = padding + (index * (width - 2 * padding)) / (weeklyData.length - 1);
+      const y = height - padding - ((day.minutes - minStudyTime) / (maxStudyTime - minStudyTime)) * (height - 2 * padding);
+      return { x, y, day, minutes: day.minutes, date: day.date };
+    });
+  };
+
+  const points = generatePoints();
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -150,7 +181,7 @@ export const StudyDashboard: React.FC<StudyDashboardProps> = ({ onBack, darkMode
           </div>
         </div>
 
-        {/* Weekly Study Time Chart */}
+        {/* Weekly Study Time Line Graph */}
         <div className={`border rounded-xl p-8 transition-colors duration-300 ${
           darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         }`}>
@@ -173,48 +204,113 @@ export const StudyDashboard: React.FC<StudyDashboardProps> = ({ onBack, darkMode
             </div>
           </div>
 
-          {/* Chart */}
+          {/* Line Chart */}
           <div className="space-y-6">
-            {/* Y-axis labels and bars */}
-            <div className="flex items-end justify-between h-64 space-x-4">
-              {weeklyData.map((day, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  {/* Bar */}
-                  <div className="w-full flex flex-col justify-end h-48 mb-4">
-                    <div className="relative group">
-                      <div
-                        className="w-full bg-blue-500 rounded-t-lg transition-all duration-500 hover:bg-blue-600 cursor-pointer"
-                        style={{ 
-                          height: `${(day.minutes / maxStudyTime) * 180}px`,
-                          minHeight: day.minutes > 0 ? '8px' : '0px'
-                        }}
-                      ></div>
-                      {/* Tooltip */}
-                      <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 ${
-                        darkMode ? 'bg-gray-700 text-white' : 'bg-gray-900 text-white'
-                      }`}>
-                        <div className="text-center">
-                          <div className="font-semibold">{formatTime(day.minutes)}</div>
-                          <div className="text-xs opacity-75">{day.date}</div>
-                        </div>
-                        <div className={`absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent ${
-                          darkMode ? 'border-t-gray-700' : 'border-t-gray-900'
-                        }`}></div>
-                      </div>
-                    </div>
-                  </div>
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[600px] h-[280px] relative">
+                {/* SVG Line Chart */}
+                <svg width="100%" height="240" className="absolute top-0 left-0">
+                  {/* Grid lines */}
+                  <defs>
+                    <pattern id="grid" width="100" height="40" patternUnits="userSpaceOnUse">
+                      <path 
+                        d="M 100 0 L 0 0 0 40" 
+                        fill="none" 
+                        stroke={darkMode ? '#374151' : '#e5e7eb'} 
+                        strokeWidth="1"
+                        opacity="0.5"
+                      />
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#grid)" />
                   
-                  {/* Day label */}
-                  <div className="text-center">
-                    <div className={`text-sm font-medium transition-colors duration-300 ${
-                      darkMode ? 'text-white' : 'text-gray-900'
-                    }`}>{day.day}</div>
-                    <div className={`text-xs transition-colors duration-300 ${
-                      darkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}>{day.date}</div>
-                  </div>
+                  {/* Y-axis labels */}
+                  {[0, 1, 2, 3, 4].map((i) => {
+                    const value = minStudyTime + (i * (maxStudyTime - minStudyTime)) / 4;
+                    const y = 200 - 40 - (i * 120) / 4;
+                    return (
+                      <text
+                        key={i}
+                        x="20"
+                        y={y + 5}
+                        className={`text-xs fill-current ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}
+                        textAnchor="end"
+                      >
+                        {formatTime(Math.round(value))}
+                      </text>
+                    );
+                  })}
+                  
+                  {/* Area under the line */}
+                  <defs>
+                    <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3"/>
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.05"/>
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d={`${generateLinePath()} L ${points[points.length - 1].x},160 L ${points[0].x},160 Z`}
+                    fill="url(#areaGradient)"
+                  />
+                  
+                  {/* Main line */}
+                  <path
+                    d={generateLinePath()}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="drop-shadow-sm"
+                  />
+                  
+                  {/* Data points */}
+                  {points.map((point, index) => (
+                    <g key={index}>
+                      {/* Outer circle */}
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r="8"
+                        fill="#3b82f6"
+                        className="opacity-20"
+                      />
+                      {/* Inner circle */}
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r="4"
+                        fill="#3b82f6"
+                        className="cursor-pointer hover:r-6 transition-all duration-200"
+                      />
+                      {/* Invisible larger circle for better hover */}
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r="15"
+                        fill="transparent"
+                        className="cursor-pointer"
+                      >
+                        <title>{`${point.day} (${point.date}): ${formatTime(point.minutes)}`}</title>
+                      </circle>
+                    </g>
+                  ))}
+                </svg>
+                
+                {/* X-axis labels */}
+                <div className="absolute bottom-0 left-0 w-full flex justify-between px-10">
+                  {weeklyData.map((day, index) => (
+                    <div key={index} className="text-center">
+                      <div className={`text-sm font-medium transition-colors duration-300 ${
+                        darkMode ? 'text-white' : 'text-gray-900'
+                      }`}>{day.day}</div>
+                      <div className={`text-xs transition-colors duration-300 ${
+                        darkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>{day.date}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
 
             {/* Summary stats */}
