@@ -106,6 +106,10 @@ function AppContent() {
     setCurrentView(view);
   };
 
+  const handleNavigateToSubjects = () => {
+    setCurrentView('subjects');
+  };
+
   // If not authenticated, show auth pages
   if (!isAuthenticated) {
     if (authView === 'register') {
@@ -227,6 +231,7 @@ function AppContent() {
             darkMode={darkMode}
             bookmarkedSubjects={bookmarkedSubjects}
             onToggleBookmark={toggleBookmark}
+            onNavigateToSubjects={handleNavigateToSubjects}
           />
         </div>
       );
