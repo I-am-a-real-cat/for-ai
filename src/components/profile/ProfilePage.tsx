@@ -37,7 +37,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, darkMode }) =>
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
             {/* Profile Picture */}
-            <div className="text-center mb-6">
+            <div className="text-center">
               <div className="relative inline-block">
                 <img
                   src={user.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&dpr=2'}
@@ -64,36 +64,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack, darkMode }) =>
                 }`}>
                   {user.academicInfo.major} • {user.academicInfo.year}
                 </p>
-              )}
-            </div>
-
-            {/* Quick Stats */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className={`text-sm transition-colors duration-300 ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>Level</span>
-                <span className={`font-semibold transition-colors duration-300 ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>{user.level || 8}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className={`text-sm transition-colors duration-300 ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>XP</span>
-                <span className={`font-semibold transition-colors duration-300 ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>{user.xp || 2340}</span>
-              </div>
-              {user.academicInfo.gpa && (
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm transition-colors duration-300 ${
-                    darkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>GPA</span>
-                  <span className={`font-semibold transition-colors duration-300 ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  }`}>{user.academicInfo.gpa}</span>
-                </div>
               )}
             </div>
           </div>
