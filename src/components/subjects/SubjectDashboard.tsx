@@ -15,7 +15,7 @@ interface SubjectDashboardProps {
 
 export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, darkMode }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'enrolled' | 'available'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'bookmark' | 'finish'>('all');
   const [selectedSubject, setSelectedSubject] = useState<EnhancedSubject | null>(null);
   const [bookmarkedSubjects, setBookmarkedSubjects] = useState<string[]>(() => {
     const saved = localStorage.getItem('bookmarkedSubjects');
@@ -24,6 +24,15 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
 
   const filteredSubjects = subjects.filter(subject => {
     const matchesSearch = subject.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const isBookmarked = bookmarkedSubjects.includes(subject.id);
+    const isFinished = (subject.completedTopics / subject.totalTopics) === 1;
+    
+    if (selectedFilter === 'bookmark') {
+      return matchesSearch && isBookmarked;
+    } else if (selectedFilter === 'finish') {
+      return matchesSearch && isFinished;
+    }
+    
     return matchesSearch;
   });
 
@@ -434,21 +443,29 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
           </div>
           
           <div className="flex space-x-2">
-            {['all', 'enrolled', 'available'].map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setSelectedFilter(filter as any)}
-                className={`px-4 py-3 rounded-xl font-medium capitalize transition-colors ${
-                  selectedFilter === filter
-                    ? 'bg-blue-600 text-white'
-                    : darkMode
-                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
+            {[
+              { id: 'all', label: 'All', icon: null },
+              { id: 'bookmark', label: 'Bookmark', icon: Bookmark },
+              { id: 'finish', label: 'Finish', icon: Award }
+            ].map((filter) => {
+              const Icon = filter.icon;
+              return (
+                <button
+                  key={filter.id}
+                  onClick={() => setSelectedFilter(filter.id as any)}
+                  className={`px-4 py-3 rounded-xl font-medium transition-colors flex items-center ${
+                    selectedFilter === filter.id
+                      ? 'bg-blue-600 text-white'
+                      : darkMode
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4 mr-2" />}
+                  {filter.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -457,6 +474,7 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
           {filteredSubjects.map((subject) => {
             const progress = (subject.completedTopics / subject.totalTopics) * 100;
             const isBookmarked = bookmarkedSubjects.includes(subject.id);
+            const isFinished = progress === 100;
             const currentTopicName = getCurrentTopicName(subject.name, subject.completedTopics);
             
             return (
@@ -489,6 +507,11 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
                         <Bookmark className="w-4 h-4" />
                       )}
                     </button>
+                    {isFinished && (
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <Award className="w-3 h-3 text-white" />
+                      </div>
+                    )}
                     <div className={`px-2 py-1 text-xs font-medium rounded-full ${
                       subject.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
                       subject.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
@@ -513,17 +536,19 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
                     <span className={`transition-colors duration-300 ${
                       darkMode ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                      {subject.completedTopics}/{subject.totalTopics} topics: {currentTopicName}
+                      {subject.completedTopics}/{subject.totalTopics} topics: {isFinished ? 'Completed!' : currentTopicName}
                     </span>
                     <span className={`font-medium transition-colors duration-300 ${
-                      darkMode ? 'text-white' : 'text-gray-900'
+                      isFinished ? 'text-green-600' : darkMode ? 'text-white' : 'text-gray-900'
                     }`}>{Math.round(progress)}%</span>
                   </div>
                   <div className={`w-full rounded-full h-2 ${
                     darkMode ? 'bg-gray-700' : 'bg-gray-200'
                   }`}>
                     <div
-                      className={`h-2 rounded-full bg-gradient-to-r ${subject.color} transition-all duration-500`}
+                      className={`h-2 rounded-full transition-all duration-500 ${
+                        isFinished ? 'bg-green-500' : `bg-gradient-to-r ${subject.color}`
+                      }`}
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -534,7 +559,7 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
                   <div className="flex items-center space-x-2">
                     <span className={`text-sm transition-colors duration-300 ${
                       darkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}>Continue</span>
+                    }`}>{isFinished ? 'Review' : 'Continue'}</span>
                     <ChevronRight className={`w-4 h-4 group-hover:text-blue-600 transition-colors ${
                       darkMode ? 'text-gray-400' : 'text-gray-400'
                     }`} />
@@ -555,7 +580,11 @@ export const SubjectDashboard: React.FC<SubjectDashboardProps> = ({ onBack, dark
             }`}>No subjects found</h3>
             <p className={`transition-colors duration-300 ${
               darkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>Try adjusting your search criteria</p>
+            }`}>
+              {selectedFilter === 'bookmark' ? 'No bookmarked subjects yet. Bookmark subjects to see them here.' :
+               selectedFilter === 'finish' ? 'No completed subjects yet. Complete subjects to see them here.' :
+               'Try adjusting your search criteria'}
+            </p>
           </div>
         )}
       </div>
